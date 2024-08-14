@@ -1,0 +1,80 @@
+From 4b0e69fd03fc5c12e1b9cb927a79439338602b5e Mon Sep 17 00:00:00 2001
+From: Abhash Jha <abhashkumarjha123@gmail.com>
+Date: Wed, 31 Jul 2024 11:51:17 +0530
+Subject: [PATCH v5 0/3] Replaced IIO_INTENSITY channel with IIO_LIGHT
+
+Hello,
+
+The first patch in the series adds support for configuring the gain and
+resolution(integration time) of the ltr390 sensor by writing to the
+respective registers. Then the available values for gain and resolution
+that are listed in the datasheet are provided via the `read_avail`
+callback. 
+
+The second patch adds a new channel for the ALS feature of the sensor.
+The same configuration of gain and resolution has to be provided for this
+channel as well. As there are two IIO channels now, we would need to
+switch the sensor's mode of operation depending on which sensor is being
+accessed. Hence, mode switching is also provided.
+
+Then the third patch adds support for calculating `counts_per_uvi` based
+on the current gain and resolution value.
+
+Changes in v5:
+- Replaced the IIO_INTENSITY channel with IIO_LIGHT channel
+- We calculate the lux value directly using `als_data / (gain * int_time)`
+- Provided a scale channel where the scale is 0.6 * WINDOW_FACTOR
+- Link to v4: https://lore.kernel.org/linux-iio/20240730065822.5707-1-abhashkumarjha123@gmail.com/T/#m
+
+Changes in v4:
+- Added "bitfield.h" include to fix `-Wimplicit-function-declaration`.
+- Link to v3: https://lore.kernel.org/linux-iio/20240729115056.355466-1-abhashkumarjha123@gmail.com/
+
+Changes in v3:
+- Added cover letter to the patch series.
+- Fixed indentation in the patch description.
+- Patch specific changes are listed below.
+
+[PATCH v3 1/3]
+	- Cleaned up the spurious changes made in v2.
+	- ltr390_set_int_time and ltr390_set_gain now return -EINVAL to
+	indicate no match.
+
+[PATCH v3 2/3]
+	- Used enum ltr390_mode inside the ltr390_data struct.
+	- Refactored `ltr390_set_mode` function according to the comments in v2.
+
+[PATCH v3 3/3]
+	- Simplified the formula for `counts_per_uvi` calculation.
+	- Removed spurious whitespace changes introduced in v2.
+
+- Link to v2: https://lore.kernel.org/linux-iio/20240728151957.310237-1-abhashkumarjha123@gmail.com/
+
+Changes in v2:
+- Split the single patch into 3 patches.
+- Used FIELD_PREP to perform bit shifting.
+- Used enum for mode selection instead of defines.
+- Fixed indentation and whitespace issues pointed out in the comments
+- Replaced `mutex_lock(&data->lock)` with `guard(mutex)(&data->lock)`
+- Provided available values for gain and resolution via `read_avail`
+  instead of sysfs attributes.
+- Refactored `ltr390_set_gain` and `ltr390_set_int_time`.
+- Used early returns instead of single exit points.
+
+- Link to v1: https://lore.kernel.org/linux-iio/20240718104947.7384-1-abhashkumarjha123@gmail.com/
+
+Regards,
+Abhash
+
+Abhash Jha (3):
+  iio: light: ltr390: Add configurable gain and resolution
+  iio: light: ltr390: Add ALS channel and support for gain and
+    resolution
+  iio: light: ltr390: Calculate 'counts_per_uvi' dynamically
+
+ drivers/iio/light/ltr390.c | 238 ++++++++++++++++++++++++++++++++++---
+ 1 file changed, 220 insertions(+), 18 deletions(-)
+
+-- 
+2.43.0
+

@@ -1,0 +1,58 @@
+From d25f60ebc343373acf811826cfee527586493c0b Mon Sep 17 00:00:00 2001
+From: Abhash Jha <abhashkumarjha123@gmail.com>
+Date: Sat, 3 Aug 2024 22:13:41 +0530
+Subject: [PATCH v7 2/2] iio: light: ltr390: Calculate 'counts_per_uvi'
+ dynamically
+
+counts_per_uvi depends on the current value of gain and resolution.
+Hence, we cannot use the hardcoded value 96.
+The `counts_per_uvi` function gives the count based on the current gain
+and resolution (integration time).
+
+Signed-off-by: Abhash Jha <abhashkumarjha123@gmail.com>
+---
+ drivers/iio/light/ltr390.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/iio/light/ltr390.c b/drivers/iio/light/ltr390.c
+index 16e06f2ab..7e58b50f3 100644
+--- a/drivers/iio/light/ltr390.c
++++ b/drivers/iio/light/ltr390.c
+@@ -46,6 +46,8 @@
+ #define LTR390_UVS_MODE	      BIT(3)
+ #define LTR390_SENSOR_ENABLE  BIT(1)
+ 
++#define LTR390_FRACTIONAL_PRECISION 100
++
+ /*
+  * At 20-bit resolution (integration time: 400ms) and 18x gain, 2300 counts of
+  * the sensor are equal to 1 UV Index [Datasheet Page#8].
+@@ -125,6 +127,14 @@ static int ltr390_set_mode(struct ltr390_data *data, enum ltr390_mode mode)
+ 	return 0;
+ }
+ 
++static int ltr390_counts_per_uvi(struct ltr390_data *data)
++{
++	const int orig_gain = 18;
++	const int orig_int_time = 400;
++
++	return DIV_ROUND_CLOSEST(23 * data->gain * data->int_time_us, 10 * orig_gain * orig_int_time);
++}
++
+ static int ltr390_read_raw(struct iio_dev *iio_device,
+ 			   struct iio_chan_spec const *chan, int *val,
+ 			   int *val2, long mask)
+@@ -164,8 +174,8 @@ static int ltr390_read_raw(struct iio_dev *iio_device,
+ 	case IIO_CHAN_INFO_SCALE:
+ 		switch (chan->type) {
+ 		case IIO_UVINDEX:
+-			*val = LTR390_WINDOW_FACTOR;
+-			*val2 = LTR390_COUNTS_PER_UVI;
++			*val = LTR390_WINDOW_FACTOR * LTR390_FRACTIONAL_PRECISION;
++			*val2 = ltr390_counts_per_uvi(data);
+ 			return IIO_VAL_FRACTIONAL;
+ 
+ 		case IIO_LIGHT:
+-- 
+2.43.0
+

@@ -1,0 +1,34 @@
+From d14eb7127ce628fc3379fa05b74f7fd64ed6feab Mon Sep 17 00:00:00 2001
+From: Abhash Jha <abhashkumarjha123@gmail.com>
+Date: Sun, 4 Aug 2024 19:05:35 +0530
+Subject: [PATCH v3 0/1] Offset correction for apds9960
+
+Hello,
+This patch adds support for doing internal offset correction for the
+proximity and gesture circuits. The correction value is written to
+the respective POFFSET_x or GOFFSET_x register depending on which
+direction we want to perform this calibration.
+For the proximity channel we apply the offset to both the DL and UR
+directions. And for the gesture channel we apply the offset to the
+respective U, D, L, R direction.
+
+Changes in v3:
+- Some code refactoring based on comments in v2
+- Link to v2 : https://lore.kernel.org/linux-iio/20240803145836.4e372899@jic23-huawei/T/#u
+
+Changes in v2:
+- Used IIO_CHAN_INFO_CALIBBIAS instead of exposing custom sysfs attributes
+- Used enum to choose between correct the offset registers
+- Corrected the formatting and style errors
+- Link to v1 : https://lore.kernel.org/linux-iio/20240707171357.709d9e35@jic23-huawei/
+
+
+Abhash Jha (1):
+  iio: light: apds9960: Add proximity and gesture offset calibration
+
+ drivers/iio/light/apds9960.c | 55 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 54 insertions(+), 1 deletion(-)
+
+-- 
+2.43.0
+
